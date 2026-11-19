@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>From Self-Play RL to Constrained Control: Distilling DiffMPC Students with DAgger</title>
+  <meta name="description" content="Distilling a constrained differentiable MPC student from a self-play RL driving policy with DAgger.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&family=Newsreader:opsz,wght@6..72,400;6..72,800&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./static/css/style.css?v=20261118202316">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body)"></script>
+  <script defer src="./static/js/results.js?v=20261118202316"></script>
+</head>
+<body>
+  <header class="site-nav">
+    <div class="nav-inner">
+      <a class="nav-brand" href="#top">Self-Play to MPC</a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#pipeline">Pipeline</a>
+        <a href="#e2e">E2E policies</a>
+        <a href="#diffmpc">DiffMPC</a>
+        <a href="#bounds">Bounds</a>
+        <a href="#results">Results</a>
+        <a href="#citation">Citation</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container">
+        <h1 class="publication-title">
+          <span class="title-line"><strong class="project-name">From Self-Play RL to Constrained Control</strong></span>
+          <span class="title-line title-subline">Distilling DiffMPC Students with DAgger</span>
+        </h1>
+
+        <div class="author-list">
+          <span class="author-entry">Luca M. Hartmann</span>
+          <span class="author-entry">Parinaz Naghizadeh</span>
+        </div>
+        <div class="affiliation-list">University of California San Diego</div>
+
+        <div class="publication-links" aria-label="Project links">
+          <span class="project-link is-pending" title="arXiv link coming soon">[arXiv]</span>
+          <a class="project-link" href="https://github.com/lucahart/selfplay-to-mpc" target="_blank" rel="noopener">[Code]</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pipeline">
+      <div class="container">
+        <h2 class="section-heading">Pipeline.</h2>
+        <p class="section-description">
+          We add explicit, checkable constraints to a strong end-to-end driving policy without retraining it from scratch.
+          A teacher is trained with self-play RL, its action head is swapped for a constrained differentiable MPC, and the
+          new policy is distilled from the teacher with DAgger in the same simulator.
+        </p>
+
+        <div class="pipeline">
+          <!-- Block 1: teacher -->
+          <figure class="pipeline-block">
+            <div class="pipeline-media">
+              <img src="./static/media/teacher_bev.gif?v=20261118202316" alt="Bird's-eye view of the self-play RL teacher driving in a CARLA town">
+            </div>
+            <figcaption>
+              <div class="pipeline-label">1. Self-play teacher</div>
+              <div class="pipeline-sublabel">self-play RL in PufferDrive</div>
+            </figcaption>
+          </figure>
+
+          <div class="pipeline-arrow" aria-hidden="true">&#10230;</div>
+
+          <!-- Block 2: decoder swap -->
+          <figure class="pipeline-block">
+            <div class="pipeline-media is-diagram">
+              <svg viewBox="0 0 500 400" role="img" aria-label="The teacher's linear action head is replaced by an MPC adapter and a DiffMPC">
+                <defs>
+                  <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M0,0 L10,5 L0,10 z" fill="#333"/>
+                  </marker>
+                </defs>
+                <!-- Same style as the paper's e2e policy figure: the encoder
+                     narrows, the backbone is a box, the decoder widens. -->
+                <g font-family="'Times New Roman', Times, STIXGeneral, serif" font-size="21" text-anchor="middle" fill="#181818" stroke-linejoin="round">
+                  <!-- Kept from the teacher -->
+                  <polygon points="20,125 112,158 112,242 20,275" fill="#dfe9f7" stroke="#333" stroke-width="1.6"/>
+                  <text x="66" y="207">Encoder</text>
+                  <line x1="112" y1="200" x2="136" y2="200" stroke="#333" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+                  <rect x="138" y="158" width="94" height="84" fill="#e4e4e4" stroke="#333" stroke-width="1.6"/>
+                  <text x="185" y="206" font-size="19">Backbone</text>
+                  <line x1="232" y1="200" x2="256" y2="200" stroke="#333" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+                  <path d="M20,300 L20,310 L232,310 L232,300" fill="none" stroke="#333" stroke-width="1.2"/>
+                  <text x="126" y="336" font-style="italic" font-size="19">reuse teacher backbone</text>
+
+                  <!-- Teacher head: moves up and fades out -->
+                  <g class="anim-linear">
+                    <polygon points="258,158 370,125 370,275 258,242" fill="#fde7c8" stroke="#333" stroke-width="1.6"/>
+                    <text x="314" y="196">Linear</text>
+                    <text x="314" y="220">+ tanh</text>
+                    <line x1="370" y1="200" x2="404" y2="200" stroke="#333" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+                    <text x="446" y="194" font-style="italic" font-size="19">discrete</text>
+                    <text x="446" y="216" font-style="italic" font-size="19">actions</text>
+                  </g>
+
+                  <!-- Student head: MPC adapter, then DiffMPC with constraints -->
+                  <g class="anim-adapter">
+                    <polygon points="258,158 336,138 336,262 258,242" fill="#fde7c8" stroke="#333" stroke-width="1.6"/>
+                    <text x="297" y="196">MPC</text>
+                    <text x="297" y="220">adapter</text>
+                  </g>
+                  <g class="anim-mpc">
+                    <line x1="336" y1="200" x2="354" y2="200" stroke="#333" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+                    <rect x="356" y="150" width="104" height="100" fill="#f5d0cc" stroke="#333" stroke-width="1.6"/>
+                    <text x="408" y="207">DiffMPC</text>
+                    <line x1="460" y1="200" x2="490" y2="200" stroke="#333" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+                    <text x="476" y="182" font-style="italic" font-size="19">u&#8320;*</text>
+                  </g>
+                  <g class="anim-constraints">
+                    <line x1="408" y1="78" x2="408" y2="148" stroke="#333" stroke-width="1.6" marker-end="url(#arrowhead)"/>
+                    <text x="408" y="48" font-style="italic" font-size="19">half-planes +</text>
+                    <text x="408" y="70" font-style="italic" font-size="19">agent ellipses</text>
+                  </g>
+                </g>
+              </svg>
+            </div>
+            <figcaption>
+              <div class="pipeline-label">2. Swap the action head</div>
+              <div class="pipeline-sublabel">linear head &#8594; adapter + DiffMPC</div>
+            </figcaption>
+          </figure>
+
+          <div class="pipeline-arrow" aria-hidden="true">&#10230;</div>
+
+          <!-- Block 3: constrained student -->
+          <figure class="pipeline-block">
+            <div class="pipeline-media">
+              <img src="./static/media/student_bev.gif?v=20261118202316" alt="Bird's-eye view of the constrained DiffMPC student with its road half-planes and agent ellipses">
+            </div>
+            <figcaption>
+              <div class="pipeline-label">3. Distill with DAgger</div>
+              <div class="pipeline-sublabel">constrained DiffMPC student</div>
+            </figcaption>
+          </figure>
+        </div>
+
+        <div class="step-details">
+          <div>
+            <h3>1. Train a teacher in self-play</h3>
+            <p>
+              An end-to-end MLP policy is trained with PPO in PufferDrive, where every car is controlled by the same
+              policy. Training follows a staged curriculum on CARLA maps and ends with a fine-tune on a mix of CARLA and
+              nuPlan maps. We use two teachers, a small teacher (1.1B steps) and a large teacher (7.9B steps).
+            </p>
+          </div>
+          <div>
+            <h3>2. Keep the backbone, swap the head</h3>
+            <p>
+              The student copies the teacher's encoders and backbone. Its linear action head is replaced by an MPC
+              adapter, a linear layer that outputs the MPC's targets, cost weights and node weights, followed by a
+              constrained DiffMPC solved with WarpMPC over a one-second horizon. The constraints are built from the
+              scene, not learned: road boundary half-planes anchored on the route, and ellipses around the four
+              nearest agents.
+            </p>
+          </div>
+          <div>
+            <h3>3. Distill with DAgger</h3>
+            <p>
+              The student is trained in the teacher's simulator with DAgger: it drives itself, and the teacher labels
+              every state it visits. The loss is on the MPC's first control, and the gradient flows back through the
+              MPC into the backbone. Distillation takes 2 to 5 GPU-hours, no more than 30% of the large teacher's
+              training time.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="e2e">
+      <div class="container">
+        <h2 class="section-heading">End-to-end policies.</h2>
+        <p class="section-description">
+          An end-to-end policy maps raw measurements straight to controls with one neural network: encoders compress the
+          measurements into latent states, a backbone processes them, and a decoder outputs a trajectory or controls.
+          There are three common ways to train it.
+        </p>
+        <figure class="paper-figure">
+          <picture>
+            <source media="(max-width: 720px)" srcset="./static/images/e2e_policy_narrow.svg?v=20261118175932">
+            <img class="e2e-figure" src="./static/images/e2e_policy.svg?v=20261118175932" width="477" height="86" alt="Structure of an end-to-end policy: measurements, encoder, latent states, backbone, latent states, decoder, trajectory or controls">
+          </picture>
+        </figure>
+        <div class="concept-grid">
+          <div>
+            <h3>Imitation learning</h3>
+            <p>The policy copies logged demonstrations. It is cheap, but small mistakes take the policy to states the data
+              never covered, and errors compound.</p>
+          </div>
+          <div>
+            <h3>Reinforcement learning</h3>
+            <p>The policy learns from a reward by trial and error. In fast self-play simulators, where every car is driven
+              by the same policy, it reaches very strong driving after billions of steps.</p>
+          </div>
+          <div>
+            <h3>Distillation</h3>
+            <p>A student learns to act like a trained teacher. With DAgger the student drives itself and the teacher
+              labels every state it visits, so the student learns to recover from its own mistakes.</p>
+          </div>
+        </div>
+        <p class="section-description callout">
+          Training end-to-end MLPs with IL, RL, or Distillation gives strong performances, but none we can easily
+          check: MLPs have no explicit notion of where the road ends or where the other cars are.
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="diffmpc">
+      <div class="container">
+        <h2 class="section-heading">Differentiable MPC.</h2>
+        <p class="section-description">
+          Model predictive control (MPC) plans a short trajectory at every step. It uses a model of the car to predict
+          where each control sequence leads, picks the one with the lowest cost that respects the constraints, applies the
+          first control, and replans at the next step. In its simplest form:
+        </p>
+        <div class="equation equation-wide">
+          $$\min_{u_0,\dots,u_{T-1}} \; \sum_{k} \big\| x_k - \bar x_k \big\|^2_{Q_k} + \big\| u_k \big\|^2_{R_k}
+          \quad \text{s.t.} \quad x_{k+1} = f(x_k, u_k), \quad u_k \in \mathcal U, \quad x_k \in \mathcal X_k$$
+        </div>
+        <!-- Phones: the same problem on three lines, constraints aligned with the cost sum. -->
+        <div class="equation equation-narrow">
+          $$\begin{aligned}
+          \min_{u_0,\dots,u_{T-1}} \quad & \sum_{k} \big\| x_k - \bar x_k \big\|^2_{Q_k} + \big\| u_k \big\|^2_{R_k} \\
+          \text{s.t.} \quad & x_{k+1} = f(x_k, u_k), \\
+          & u_k \in \mathcal U, \quad x_k \in \mathcal X_k
+          \end{aligned}$$
+        </div>
+        <p class="section-description">
+          The targets \(\bar x_k\) and weights \(Q_k, R_k\) say what the car should do, the dynamics \(f\) say what it
+          can do, and the constraint sets \(\mathcal U, \mathcal X_k\) say what it must never do.
+        </p>
+        <p class="section-description">
+          <strong>Differentiable</strong> MPC turns the solver into a layer of the network. The network predicts the
+          targets and weights, the solver returns the plan, and the gradient of the first control \(u_0^\star\) with
+          respect to the targets and weights is computed through the optimality conditions of the solve. The network
+          and the MPC therefore train together with ordinary backpropagation, and the constraints stay explicit at every
+          step.
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="bounds">
+      <div class="container">
+        <h2 class="section-heading">Bounds.</h2>
+        <div class="bounds-layout">
+        <p class="section-description">
+          The student's MPC has two kinds of constraints, both built from the scene rather than learned:
+          <strong>road boundaries</strong>, which keep the car on the road along its route, and
+          <strong>agent ellipses</strong>, which keep it clear of the four nearest cars.
+        </p>
+        <figure class="bounds-figure">
+          <img src="./static/media/bounds_bev.gif?v=20261118201912" alt="Close-up bird's-eye view following the constrained student: road boundary planes beside the ego and ellipses around the other cars">
+          <figcaption>
+            <span><span class="swatch" style="background:#22c55e"></span>ego</span>
+            <span><span class="swatch" style="background:#d946ef"></span>road boundary planes</span>
+            <span><span class="swatch" style="background:#f59e0b"></span>agent ellipses</span>
+          </figcaption>
+        </figure>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="results">
+      <div class="container">
+        <h2 class="section-heading">Results.</h2>
+        <p class="section-description">
+          Failure rate (collisions plus off-road per vehicle, lower is better) on 1000 CARLA, 3645 nuPlan and 1000 Waymo
+          test scenes, for students of a small (4x512) and a large (4x1024) teacher. Bars are the mean over nine seeds
+          with standard error, and the dashed line is the teacher. Waymo is never used for training and serves as an out-of-distribution test.
+        </p>
+        <figure class="results-figure">
+          <div class="results-grid" id="results-grid"></div>
+        </figure>
+        <div class="callout-row">
+          <p class="section-description callout">
+            The constrained DiffMPC student is never significantly worse than the other students. It matches or beats its
+            teacher on every test set, and on Waymo it fails 12 to 22% less often than the teacher, mostly by leaving the
+            road less.
+          </p>
+          <div class="stat-tile" id="waymo-stat">
+            <div class="stat-number"><span data-count-to="12">12</span>&ndash;<span data-count-to="22">22</span>%</div>
+            <div class="stat-label">fewer failures than the teacher on out-of-distribution Waymo scenes</div>
+          </div>
+        </div>
+
+        <h3 class="subsection-heading">Training cost.</h3>
+        <p class="section-description">
+          Adding the constraints is cheap compared to training the teacher. For the large policy, distilling the
+          constrained DiffMPC student adds at most 30% to the teacher's training time on one RTX 5090. The students
+          reach their best checkpoint within 10M to 60M labels, against 7.9B self-play steps for the teacher.
+        </p>
+        <figure class="cost-figure" id="cost-figure">
+          <div class="cost-row">
+            <div class="cost-label">Large teacher</div>
+            <div class="cost-track">
+              <div class="cost-bar cost-teacher" style="--share: 77.6%"><span>Self-play RL teacher 11.4 h</span></div>
+              <div class="cost-bar cost-distill" style="--share: 13.6%"></div>
+              <div class="cost-bar cost-distill-range" style="--share: 8.8%"></div>
+            </div>
+            <div class="cost-total">+18&ndash;29%</div>
+          </div>
+          <figcaption>
+            <span><i class="cost-key cost-teacher"></i>teacher training (self-play RL, 7.9B steps)</span>
+            <span><i class="cost-key cost-distill"></i>constrained DiffMPC distillation, 2.0&ndash;3.3 h over seeds</span>
+          </figcaption>
+        </figure>
+        <p class="section-description section-note small-note">
+          The small teacher trained in only 1 h, so for it the 2.8 to 4.7 h of distillation is longer than the teacher's
+          own training: each MPC label costs about 8 to 10 times an MLP label.
+        </p>
+      </div>
+    </section>
+
+    <section class="section" id="citation">
+      <div class="container">
+        <h2 class="section-heading">Citation.</h2>
+        <div class="bibtex-shell">
+          <button class="copy-button" type="button" data-copy-target="bibtex-code" aria-label="Copy BibTeX">Copy</button>
+          <pre class="bibtex"><code id="bibtex-code">@inproceedings{hartmann2027selfplay,
+  title     = {From Self-Play {RL} to Constrained Control:
+               Distilling {DiffMPC} Students with {DAgger}},
+  author    = {Hartmann, Luca M. and Naghizadeh, Parinaz},
+  booktitle = {Under Review},
+  year      = {2027}
+}</code></pre>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    Website design inspired by <a href="https://robbyant-research.github.io/Zero-WAM/" target="_blank" rel="noopener">Zero-WAM</a>.
+  </footer>
+  <script>
+    // Copy the BibTeX entry and confirm on the button for a moment.
+    document.querySelectorAll("[data-copy-target]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const text = document.getElementById(button.dataset.copyTarget).innerText;
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          // Plain http (e.g. a local preview) has no clipboard API.
+          const scratch = document.createElement("textarea");
+          scratch.value = text;
+          document.body.appendChild(scratch);
+          scratch.select();
+          document.execCommand("copy");
+          scratch.remove();
+        }
+        button.textContent = "Copied";
+        setTimeout(() => { button.textContent = "Copy"; }, 1500);
+      });
+    });
+  </script>
+  <script>
+    // Bold the header link of the section being read: the last section
+    // whose top has scrolled past the sticky header.
+    const navLinks = [...document.querySelectorAll(".nav-links a")];
+    const navSections = navLinks.map((link) => document.querySelector(link.getAttribute("href")));
+    const NAV_OFFSET_PX = 120;
+    function highlightCurrentSection() {
+      let currentIdx = -1;
+      navSections.forEach((section, idx) => {
+        if (section.getBoundingClientRect().top <= NAV_OFFSET_PX) currentIdx = idx;
+      });
+      const atPageEnd = window.innerHeight + window.scrollY >= document.body.scrollHeight - 2;
+      if (atPageEnd) currentIdx = navSections.length - 1;
+      navLinks.forEach((link, idx) => link.classList.toggle("is-active", idx === currentIdx));
+    }
+    window.addEventListener("scroll", highlightCurrentSection, { passive: true });
+    highlightCurrentSection();
+  </script>
+  <script>
+    // Draw each key-message box around its text the first time it scrolls into view.
+    const calloutObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        entry.target.classList.add("is-drawn");
+        calloutObserver.unobserve(entry.target);
+      });
+    }, { threshold: 0.6 });
+    document.querySelectorAll(".callout").forEach((callout) => calloutObserver.observe(callout));
+  </script>
+  <script>
+    // Count the Waymo stat up from 0 the first time it scrolls into view.
+    const COUNT_DURATION_MS = 1400;
+    const statTile = document.getElementById("waymo-stat");
+    const countTargets = [...statTile.querySelectorAll("[data-count-to]")];
+    countTargets.forEach((target) => { target.textContent = "0"; });
+    const statObserver = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      statObserver.disconnect();
+      const startMs = performance.now();
+      function step(nowMs) {
+        const progress = Math.min((nowMs - startMs) / COUNT_DURATION_MS, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        countTargets.forEach((target) => {
+          target.textContent = Math.round(eased * Number(target.dataset.countTo));
+        });
+        if (progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }, { threshold: 0.6 });
+    statObserver.observe(statTile);
+  </script>
+  <script>
+    // Grow the training-cost bar the first time it scrolls into view.
+    const costFigure = document.getElementById("cost-figure");
+    const costObserver = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      costFigure.classList.add("is-revealed");
+      costObserver.disconnect();
+    }, { threshold: 0.5 });
+    costObserver.observe(costFigure);
+  </script>
+</body>
+</html>
