@@ -78,6 +78,15 @@ DiffMPC student takes 2 to 5 hours to distill.
 | `docs/` | How the code implements the method, setup, evaluation |
 | `website/` | Source of the project website |
 
+## Generative AI use
+
+The research questions, method, experimental design, and analysis of results
+are the authors' own. Generative AI tools wrote the code for the experiments,
+under the authors' specification and review. They were also used to support
+literature search and idea generation, and to assist with the writing of the
+manuscript. The authors verified all AI-generated code and text and take full
+responsibility for the content of this paper.
+
 ## Citation
 
 ```bibtex
