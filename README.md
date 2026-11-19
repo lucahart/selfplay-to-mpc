@@ -80,12 +80,11 @@ DiffMPC student takes 2 to 5 hours to distill.
 
 ## Generative AI use
 
-The research questions, method, experimental design, and analysis of results
-are the authors' own. Generative AI tools wrote the code for the experiments,
-under the authors' specification and review. They were also used to support
-literature search and idea generation, and to assist with the writing of the
-manuscript. The authors verified all AI-generated code and text and take full
-responsibility for the content of this paper.
+The research questions, method, experimental design, and analysis of this
+work are the authors' own. Generative AI tools wrote this codebase for the
+experiments, under the authors' specification and review. The authors
+verified all AI-generated code and take full responsibility for the content
+of this repository and its corresponding paper.
 
 ## Citation
 
