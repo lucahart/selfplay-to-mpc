@@ -2,7 +2,7 @@
 
 Luca M. Hartmann and Parinaz Naghizadeh, University of California San Diego
 
-**[Paper (arXiv:2611.25197)](https://arxiv.org/abs/2611.25197)** · **[Project website](https://lucahart.github.io/selfplay-to-mpc/)** · videos, method overview and results
+**[Project website](https://lucahart.github.io/selfplay-to-mpc/)** · videos, method overview and results
 
 We add explicit, checkable constraints to a strong end-to-end driving policy
 without retraining it from scratch. A teacher is trained with self-play RL in
