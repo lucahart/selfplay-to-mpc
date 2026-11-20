@@ -2,7 +2,7 @@
 
 Luca M. Hartmann and Parinaz Naghizadeh, University of California San Diego
 
-**[Project website](https://lucahart.github.io/selfplay-to-mpc/)** · videos, method overview and results
+**[Paper (arXiv:2611.25197)](https://arxiv.org/abs/2611.25197)** · **[Project website](https://lucahart.github.io/selfplay-to-mpc/)** · videos, method overview and results
 
 We add explicit, checkable constraints to a strong end-to-end driving policy
 without retraining it from scratch. A teacher is trained with self-play RL in
@@ -89,12 +89,14 @@ of this repository and its corresponding paper.
 ## Citation
 
 ```bibtex
-@inproceedings{hartmann2027selfplay,
-  title     = {From Self-Play {RL} to Constrained Control:
-               Distilling {DiffMPC} Students with {DAgger}},
-  author    = {Hartmann, Luca M. and Naghizadeh, Parinaz},
-  booktitle = {Under Review},
-  year      = {2027}
+@misc{hartmann2026selfplay,
+  title         = {From Self-Play {RL} to Constrained Control:
+                   Distilling {DiffMPC} Students with {DAgger}},
+  author        = {Hartmann, Luca M. and Naghizadeh, Parinaz},
+  year          = {2026},
+  eprint        = {2611.25197},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2611.25197}
 }
 ```
 
